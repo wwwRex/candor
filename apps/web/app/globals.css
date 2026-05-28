@@ -1,24 +1,13 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html,
-body {
+html, body {
+  background: #ffffff;
+  color: #000000;
   max-width: 100vw;
   overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
+  scroll-behavior: smooth;
 }
 
 * {
@@ -32,19 +21,31 @@ a {
   text-decoration: none;
 }
 
-.imgDark {
-  display: none;
+/* Fade-rise animations */
+@keyframes fade-rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+.animate-fade-rise {
+  animation: fade-rise 0.8s ease-out both;
+}
+.animate-fade-rise-delay {
+  animation: fade-rise 0.8s ease-out 0.2s both;
+}
+.animate-fade-rise-delay-2 {
+  animation: fade-rise 0.8s ease-out 0.4s both;
+}
 
-  .imgLight {
-    display: none;
-  }
-  .imgDark {
-    display: unset;
-  }
+/* Perpetual slow zoom */
+@keyframes slow-zoom {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+
+.animate-slow-zoom {
+  animation: slow-zoom 24s ease-in-out infinite alternate;
+  transform-origin: center center;
+  will-change: transform;
+  backface-visibility: hidden;
 }

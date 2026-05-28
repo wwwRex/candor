@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Candor",
+    "slug": "candor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "candor",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.candor.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Candor needs camera access to record your daily video journal entries.",
+        "NSMicrophoneUsageDescription": "Candor needs microphone access to record audio in your video journal entries."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0E0E10",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.candor.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Candor needs camera access to record your daily video journal entries.",
+          "microphonePermission": "Candor needs microphone access to record audio in your video journal entries.",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#D4A853"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
