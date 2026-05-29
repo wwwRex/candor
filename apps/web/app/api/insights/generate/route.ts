@@ -165,7 +165,7 @@ async function runAdvicePipeline(userId: string) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        to: userRow.push_token,
+        to: pushRow.push_token,
         title: 'Your insight is ready',
         body: 'Tap to hear what your journal reveals about you.',
         data: { insight_session_id: session.id },
