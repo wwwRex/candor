@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
@@ -11,6 +11,9 @@ export default function JournalEntryDetail() {
   const router = useRouter();
   const [entry, setEntry] = useState<JournalEntry | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notes, setNotes] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -19,11 +22,33 @@ export default function JournalEntryDetail() {
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/journal/${id}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      if (res.ok) setEntry(await res.json() as JournalEntry);
+      if (res.ok) {
+        const data = await res.json() as JournalEntry;
+        setEntry(data);
+        setNotes(data.notes ?? '');
+      }
       setLoading(false);
     }
     void load();
   }, [id]);
+
+  function handleNotesChange(text: string) {
+    setNotes(text);
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => saveNotes(text), 1200);
+  }
+
+  async function saveNotes(text: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    setSavingNotes(true);
+    await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/journal/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ notes: text }),
+    });
+    setSavingNotes(false);
+  }
 
   async function toggleIntention(intentionId: string, completed: boolean) {
     const { data: { session } } = await supabase.auth.getSession();
@@ -108,6 +133,22 @@ export default function JournalEntryDetail() {
             ))}
           </View>
         )}
+
+        <View style={styles.section}>
+          <View style={styles.notesTitleRow}>
+            <Text style={styles.sectionTitle}>Notes</Text>
+            {savingNotes && <Text style={styles.saving}>Saving…</Text>}
+          </View>
+          <TextInput
+            style={styles.notesInput}
+            value={notes}
+            onChangeText={handleNotesChange}
+            placeholder="Add a note about this entry…"
+            placeholderTextColor={Colors.text.muted}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -147,4 +188,18 @@ const styles = StyleSheet.create({
   checkmark: { color: '#fff', fontSize: 12, fontWeight: '700' },
   intentionText: { fontSize: 15, color: Colors.text.primary, flex: 1 },
   intentionDone: { color: Colors.text.muted, textDecorationLine: 'line-through' },
+  notesTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  saving: { fontSize: 12, color: Colors.text.muted },
+  notesInput: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: Colors.text.primary,
+    fontSize: 15,
+    lineHeight: 22,
+    minHeight: 120,
+  },
 });

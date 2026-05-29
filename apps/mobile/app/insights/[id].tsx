@@ -13,6 +13,7 @@ export default function InsightDetail() {
   const [session, setSession] = useState<InsightSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [rating, setRating] = useState<1 | -1 | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
@@ -22,12 +23,28 @@ export default function InsightDetail() {
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/insights/${id}`, {
         headers: { Authorization: `Bearer ${authSession.access_token}` },
       });
-      if (res.ok) setSession(await res.json() as InsightSession);
+      if (res.ok) {
+        const data = await res.json() as InsightSession & { rating?: 1 | -1 };
+        setSession(data);
+        setRating(data.rating ?? null);
+      }
       setLoading(false);
     }
     void load();
     return () => { soundRef.current?.unloadAsync(); };
   }, [id]);
+
+  async function handleRate(value: 1 | -1) {
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    if (!authSession) return;
+    const newRating = rating === value ? null : value;
+    setRating(newRating);
+    await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/insights/${id}/rate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authSession.access_token}` },
+      body: JSON.stringify({ rating: newRating ?? 0 }),
+    });
+  }
 
   async function toggleAudio() {
     if (!session?.audio_url) return;
@@ -97,6 +114,24 @@ export default function InsightDetail() {
         )}
 
         <Text style={styles.adviceText}>{session.advice_text}</Text>
+
+        <View style={styles.ratingRow}>
+          <Text style={styles.ratingLabel}>Was this helpful?</Text>
+          <View style={styles.ratingBtns}>
+            <TouchableOpacity
+              style={[styles.ratingBtn, rating === 1 && styles.ratingBtnActive]}
+              onPress={() => handleRate(1)}
+            >
+              <Text style={styles.ratingBtnText}>👍</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.ratingBtn, rating === -1 && styles.ratingBtnActive]}
+              onPress={() => handleRate(-1)}
+            >
+              <Text style={styles.ratingBtnText}>👎</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -121,4 +156,10 @@ const styles = StyleSheet.create({
   audioBtnText: { color: Colors.accent.amber, fontSize: 15, fontWeight: '600' },
   adviceText: { fontSize: 16, color: Colors.text.primary, lineHeight: 28 },
   error: { color: Colors.text.secondary, textAlign: 'center', marginTop: 60, fontSize: 16 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 32, paddingTop: 20, borderTopWidth: 1, borderTopColor: Colors.border },
+  ratingLabel: { fontSize: 14, color: Colors.text.secondary },
+  ratingBtns: { flexDirection: 'row', gap: 12 },
+  ratingBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  ratingBtnActive: { borderColor: Colors.accent.amber, backgroundColor: `${Colors.accent.amber}22` },
+  ratingBtnText: { fontSize: 22 },
 });

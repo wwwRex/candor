@@ -40,6 +40,9 @@ export default function RecordTab() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [intentions, setIntentions] = useState<string[]>(['']);
   const [entryId, setEntryId] = useState<string | null>(null);
+  const [videoUri, setVideoUri] = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const recordingStartRef = useRef<number>(0);
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
@@ -75,9 +78,14 @@ export default function RecordTab() {
     if (!cameraRef.current) return;
     setIsRecording(true);
     setStage('recording');
+    recordingStartRef.current = Date.now();
     try {
       const video = await cameraRef.current.recordAsync({ maxDuration: 180 });
-      if (video) setStage('preview');
+      if (video?.uri) {
+        setVideoUri(video.uri);
+        setVideoDuration(Math.round((Date.now() - recordingStartRef.current) / 1000));
+        setStage('preview');
+      }
     } catch {
       setIsRecording(false);
       setStage('prompt');
@@ -89,14 +97,11 @@ export default function RecordTab() {
     setIsRecording(false);
   }
 
-  async function handleConfirmRecording() {
-    setStage('goals');
-  }
-
-  async function handleSubmit(localUri: string) {
+  async function handleSubmit() {
+    if (!videoUri) return;
     setStage('uploading');
     try {
-      const result = await uploadVideoAndTranscribe(localUri, 60, setUploadProgress);
+      const result = await uploadVideoAndTranscribe(videoUri, videoDuration, setUploadProgress);
       setEntryId(result.entry_id);
 
       // Save daily intentions
@@ -128,7 +133,7 @@ export default function RecordTab() {
           <Text style={styles.doneEmoji}>✓</Text>
           <Text style={styles.doneTitle}>Entry recorded</Text>
           <Text style={styles.doneBody}>Your video is being transcribed. Check back soon.</Text>
-          <TouchableOpacity style={styles.doneBtn} onPress={() => { setStage('prompt'); setIntentions(['']); }}>
+          <TouchableOpacity style={styles.doneBtn} onPress={() => { setStage('prompt'); setIntentions(['']); setVideoUri(null); setVideoDuration(0); }}>
             <Text style={styles.doneBtnText}>Record Another</Text>
           </TouchableOpacity>
         </View>
@@ -144,6 +149,28 @@ export default function RecordTab() {
           <ActivityIndicator size="large" color={Colors.accent.amber} />
           <Text style={styles.doneTitle}>Uploading…</Text>
           <Text style={styles.doneBody}>{Math.round(uploadProgress * 100)}%</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Preview stage
+  if (stage === 'preview') {
+    const mins = Math.floor(videoDuration / 60);
+    const secs = videoDuration % 60;
+    const durationLabel = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.doneView}>
+          <Text style={styles.doneEmoji}>🎥</Text>
+          <Text style={styles.doneTitle}>Entry recorded</Text>
+          <Text style={styles.doneBody}>{durationLabel} · Looks good?</Text>
+          <TouchableOpacity style={styles.submitBtn} onPress={() => setStage('goals')}>
+            <Text style={styles.submitBtnText}>Continue</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.doneBtn} onPress={() => { setVideoUri(null); setStage('prompt'); }}>
+            <Text style={styles.doneBtnText}>Retake</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -178,7 +205,7 @@ export default function RecordTab() {
           )}
           <TouchableOpacity
             style={styles.submitBtn}
-            onPress={() => handleSubmit('')}
+            onPress={() => handleSubmit()}
           >
             <Text style={styles.submitBtnText}>Submit Entry</Text>
           </TouchableOpacity>
