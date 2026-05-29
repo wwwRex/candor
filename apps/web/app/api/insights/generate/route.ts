@@ -154,13 +154,13 @@ async function runAdvicePipeline(userId: string) {
   }
 
   // Send Expo push notification
-  const { data: userRow } = await supabaseService
+  const { data: pushRow } = await supabaseService
     .from('users')
     .select('push_token')
     .eq('id', userId)
     .single();
 
-  if (userRow?.push_token) {
+  if (pushRow?.push_token) {
     await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
