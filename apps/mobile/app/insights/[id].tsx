@@ -2,10 +2,12 @@ import { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Audio } from 'expo-av';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import type { InsightSession } from '@repo/shared';
+
+let Audio: typeof import('expo-av').Audio | null = null;
+try { Audio = require('expo-av').Audio; } catch { /* not available in Expo Go */ }
 
 export default function InsightDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -14,7 +16,7 @@ export default function InsightDetail() {
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [rating, setRating] = useState<1 | -1 | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const soundRef = useRef<import('expo-av').Audio.Sound | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -47,7 +49,7 @@ export default function InsightDetail() {
   }
 
   async function toggleAudio() {
-    if (!session?.audio_url) return;
+    if (!session?.audio_url || !Audio) return;
 
     if (soundRef.current) {
       if (isPlaying) {

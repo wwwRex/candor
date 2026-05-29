@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { supabase } from '../lib/supabase';
 import { Colors } from '../constants/colors';
+import { AppSplashScreen } from '../components/ui/SplashScreen';
 
 export default function RootLayout() {
   const [session, setSession] = useState<boolean | null>(null);
@@ -27,11 +28,18 @@ export default function RootLayout() {
     if (session && inAuth) router.replace('/(tabs)');
   }, [session, segments]);
 
-  if (session === null) return null;
+  if (session === null) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
+        <StatusBar style="dark" />
+        <AppSplashScreen />
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Slot />
     </GestureHandlerRootView>
   );

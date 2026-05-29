@@ -8,51 +8,44 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.surface,
+          backgroundColor: Colors.background,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          paddingBottom: 8,
-          height: 80,
+          paddingBottom: 10,
+          paddingTop: 10,
+          height: 82,
         },
-        tabBarActiveTintColor: Colors.accent.amber,
+        tabBarActiveTintColor: Colors.accent.terracotta,
         tabBarInactiveTintColor: Colors.text.muted,
-        tabBarLabelStyle: { fontSize: 11, marginTop: 2 },
+        tabBarLabelStyle: { fontSize: 10, marginTop: 4, letterSpacing: 0.5, fontWeight: '500' },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Record',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="radio-button-on" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="mic-outline" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="journal"
         options={{
           title: 'Journal',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="book-outline" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="insights"
         options={{
           title: 'Insights',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="sparkles-outline" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="sparkles-outline" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="person-outline" size={22} color={color} />,
         }}
       />
     </Tabs>

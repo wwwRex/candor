@@ -1,14 +1,5 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Link } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
@@ -26,13 +17,12 @@ export default function SignIn() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.inner}>
-        <Text style={styles.title}>Candor</Text>
-        <Text style={styles.subtitle}>Your honest daily record.</Text>
+        <View style={styles.header}>
+          <Text style={styles.logo}>Candor</Text>
+          <Text style={styles.tagline}>your honest daily record</Text>
+        </View>
 
         <View style={styles.form}>
           <TextInput
@@ -65,7 +55,7 @@ export default function SignIn() {
 
         <Link href="/(auth)/sign-up" asChild>
           <TouchableOpacity>
-            <Text style={styles.link}>No account? Sign up</Text>
+            <Text style={styles.link}>No account? Create one</Text>
           </TouchableOpacity>
         </Link>
       </View>
@@ -76,27 +66,28 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
-  title: { fontSize: 36, fontWeight: '600', color: Colors.text.primary, textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: Colors.text.secondary, textAlign: 'center', marginBottom: 48 },
-  form: { gap: 12, marginBottom: 24 },
+  header: { alignItems: 'center', marginBottom: 52 },
+  logo: { fontSize: 42, fontWeight: '300', color: Colors.text.primary, letterSpacing: 6, fontFamily: 'Georgia', marginBottom: 10 },
+  tagline: { fontSize: 13, color: Colors.text.muted, letterSpacing: 2 },
+  form: { gap: 12, marginBottom: 28 },
   input: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     color: Colors.text.primary,
     fontSize: 16,
   },
   button: {
-    backgroundColor: Colors.accent.amber,
+    backgroundColor: Colors.accent.terracotta,
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 17,
     alignItems: 'center',
     marginTop: 4,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: Colors.background, fontSize: 16, fontWeight: '600' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '500', letterSpacing: 0.3 },
   link: { color: Colors.text.secondary, textAlign: 'center', fontSize: 14 },
 });

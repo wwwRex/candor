@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Text, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, Text, ActivityIndicator, RefreshControl, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { InsightCard } from '../../components/Insights/InsightCard';
@@ -46,20 +46,30 @@ export default function InsightsTab() {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void fetchInsights(); }} tintColor={Colors.accent.amber} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => { setRefreshing(true); void fetchInsights(); }}
+            tintColor={Colors.accent.terracotta}
+          />
         }
       >
-        <Text style={styles.heading}>Insights</Text>
+        <View style={styles.header}>
+          <Text style={styles.heading}>Reflections</Text>
+          <Text style={styles.subheading}>AI insights from your journal</Text>
+        </View>
 
         {loading ? (
-          <ActivityIndicator color={Colors.accent.amber} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={Colors.accent.terracotta} style={{ marginTop: 40 }} />
         ) : (
           <>
             {latest ? (
               <InsightCard session={latest} isLatest />
             ) : (
               <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>Your first insight will appear here after you record a few entries.</Text>
+                <Text style={styles.emptyHeadline}>Your first reflection</Text>
+                <Text style={styles.emptyBody}>
+                  Record a few entries and generate your first AI insight — a thoughtful reflection on your patterns and inner life.
+                </Text>
               </View>
             )}
 
@@ -69,13 +79,13 @@ export default function InsightsTab() {
               disabled={generating}
             >
               <Text style={styles.generateBtnText}>
-                {generating ? 'Generating…' : 'Generate New Insight'}
+                {generating ? 'Reflecting…' : 'Generate new reflection'}
               </Text>
             </TouchableOpacity>
 
             {history.length > 0 && (
               <>
-                <Text style={styles.sectionTitle}>Past Insights</Text>
+                <Text style={styles.sectionLabel}>Earlier Reflections</Text>
                 {history.map((s) => <InsightCard key={s.id} session={s} />)}
               </>
             )}
@@ -88,27 +98,53 @@ export default function InsightsTab() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { paddingHorizontal: 16, paddingBottom: 40 },
-  heading: { fontSize: 28, fontWeight: '600', color: Colors.text.primary, paddingTop: 8, paddingBottom: 16 },
+  content: { paddingHorizontal: 20, paddingBottom: 48 },
+  header: {
+    paddingTop: 20,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+    marginBottom: 24,
+  },
+  heading: {
+    fontSize: 32,
+    fontWeight: '300',
+    color: Colors.text.primary,
+    fontFamily: 'Georgia',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  subheading: { fontSize: 13, color: Colors.text.muted },
+
   emptyCard: {
     backgroundColor: Colors.surface,
     borderRadius: 20,
-    padding: 24,
+    padding: 26,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: 16,
+    marginBottom: 20,
+    gap: 10,
   },
-  emptyText: { color: Colors.text.secondary, fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  emptyHeadline: { fontSize: 20, fontWeight: '300', color: Colors.text.primary, fontFamily: 'Georgia' },
+  emptyBody: { fontSize: 14, color: Colors.text.secondary, lineHeight: 22, fontWeight: '300' },
+
   generateBtn: {
-    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: Colors.accent.amber,
+    borderColor: Colors.accent.terracotta,
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 36,
   },
-  generateBtnDisabled: { opacity: 0.5 },
-  generateBtnText: { color: Colors.accent.amber, fontSize: 15, fontWeight: '600' },
-  sectionTitle: { fontSize: 17, fontWeight: '600', color: Colors.text.primary, marginBottom: 12 },
+  generateBtnDisabled: { opacity: 0.4 },
+  generateBtnText: { color: Colors.accent.terracotta, fontSize: 15, fontWeight: '500', letterSpacing: 0.3 },
+
+  sectionLabel: {
+    fontSize: 11,
+    color: Colors.text.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    fontWeight: '600',
+    marginBottom: 14,
+  },
 });

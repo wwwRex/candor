@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,69 +15,54 @@ import { uploadVideoAndTranscribe } from '../../lib/upload';
 import { Colors } from '../../constants/colors';
 import { supabase } from '../../lib/supabase';
 
-type Stage = 'prompt' | 'recording' | 'preview' | 'uploading' | 'goals' | 'done';
+type Stage = 'home' | 'recording' | 'preview' | 'uploading' | 'goals' | 'done';
 
 const DAILY_PROMPTS = [
-  'What's one thing that surprised you today?',
+  "What's one thing that surprised you today?",
   'Describe your energy level and what drove it.',
-  'What's one thing you want to do differently tomorrow?',
+  "What's one thing you'd do differently tomorrow?",
   'How did your body feel today?',
   'What are you grateful for right now?',
   'What took up most of your mental space today?',
   'How did you show up for yourself today?',
 ];
 
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'Good morning.';
+  if (h >= 12 && h < 17) return 'Good afternoon.';
+  if (h >= 17 && h < 22) return 'Good evening.';
+  return 'Good night.';
+}
+
 function getTodayPrompt(): string {
-  const dayIndex = new Date().getDay();
-  return DAILY_PROMPTS[dayIndex % DAILY_PROMPTS.length] ?? DAILY_PROMPTS[0]!;
+  return DAILY_PROMPTS[new Date().getDay() % DAILY_PROMPTS.length] ?? DAILY_PROMPTS[0]!;
 }
 
 export default function RecordTab() {
   const [permission, requestPermission] = useCameraPermissions();
-  const [recordingMode, setRecordingMode] = useState<'guided' | 'quick'>('guided');
-  const [stage, setStage] = useState<Stage>('prompt');
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [stage, setStage] = useState<Stage>('home');
   const [isRecording, setIsRecording] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [intentions, setIntentions] = useState<string[]>(['']);
-  const [entryId, setEntryId] = useState<string | null>(null);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState(0);
   const recordingStartRef = useRef<number>(0);
   const cameraRef = useRef<CameraView>(null);
 
-  useEffect(() => {
-    supabase
-      .from('users')
-      .select('recording_mode')
-      .eq('id', (supabase.auth as unknown as { currentUser?: { id: string } }).currentUser?.id ?? '')
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.recording_mode) setRecordingMode(data.recording_mode as 'guided' | 'quick');
-      });
-  }, []);
-
-  if (!permission) return <View style={styles.container} />;
-
-  if (!permission.granted) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.permissionView}>
-          <Text style={styles.permissionTitle}>Camera Access</Text>
-          <Text style={styles.permissionBody}>
-            Candor needs camera access to record your daily video entries.
-          </Text>
-          <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-            <Text style={styles.permissionBtnText}>Grant Access</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
+  async function handleStartPress() {
+    if (!permission?.granted) {
+      const res = await requestPermission();
+      if (!res.granted) return;
+    }
+    setStage('recording');
+    setTimeout(() => startRecording(), 300);
   }
 
   async function startRecording() {
     if (!cameraRef.current) return;
     setIsRecording(true);
-    setStage('recording');
     recordingStartRef.current = Date.now();
     try {
       const video = await cameraRef.current.recordAsync({ maxDuration: 180 });
@@ -88,7 +73,7 @@ export default function RecordTab() {
       }
     } catch {
       setIsRecording(false);
-      setStage('prompt');
+      setStage('home');
     }
   }
 
@@ -102,9 +87,6 @@ export default function RecordTab() {
     setStage('uploading');
     try {
       const result = await uploadVideoAndTranscribe(videoUri, videoDuration, setUploadProgress);
-      setEntryId(result.entry_id);
-
-      // Save daily intentions
       const validIntentions = intentions.filter((i) => i.trim());
       const { data: { session } } = await supabase.auth.getSession();
       if (session && validIntentions.length > 0) {
@@ -121,68 +103,72 @@ export default function RecordTab() {
       setStage('done');
     } catch (err) {
       Alert.alert('Upload failed', (err as Error).message);
-      setStage('prompt');
+      setStage('home');
     }
   }
 
-  // Done state
+  function resetToHome() {
+    setStage('home');
+    setIntentions(['']);
+    setVideoUri(null);
+    setVideoDuration(0);
+  }
+
+  // Done
   if (stage === 'done') {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.doneView}>
-          <Text style={styles.doneEmoji}>✓</Text>
-          <Text style={styles.doneTitle}>Entry recorded</Text>
-          <Text style={styles.doneBody}>Your video is being transcribed. Check back soon.</Text>
-          <TouchableOpacity style={styles.doneBtn} onPress={() => { setStage('prompt'); setIntentions(['']); setVideoUri(null); setVideoDuration(0); }}>
-            <Text style={styles.doneBtnText}>Record Another</Text>
+        <View style={styles.centeredView}>
+          <Text style={styles.doneHeadline}>Your thoughts{'\n'}have been saved.</Text>
+          <View style={styles.ripple}><View style={styles.rippleInner} /></View>
+          <Text style={styles.doneBody}>Check your journal soon — it will be transcribed shortly.</Text>
+          <TouchableOpacity style={styles.ghostBtn} onPress={resetToHome}>
+            <Text style={styles.ghostBtnText}>Record another</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Uploading state
+  // Uploading
   if (stage === 'uploading') {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.doneView}>
-          <ActivityIndicator size="large" color={Colors.accent.amber} />
-          <Text style={styles.doneTitle}>Uploading…</Text>
-          <Text style={styles.doneBody}>{Math.round(uploadProgress * 100)}%</Text>
+        <View style={styles.centeredView}>
+          <ActivityIndicator size="large" color={Colors.accent.terracotta} />
+          <Text style={styles.stateBody}>Saving entry… {Math.round(uploadProgress * 100)}%</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Preview stage
+  // Preview
   if (stage === 'preview') {
     const mins = Math.floor(videoDuration / 60);
     const secs = videoDuration % 60;
-    const durationLabel = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.doneView}>
-          <Text style={styles.doneEmoji}>🎥</Text>
-          <Text style={styles.doneTitle}>Entry recorded</Text>
-          <Text style={styles.doneBody}>{durationLabel} · Looks good?</Text>
-          <TouchableOpacity style={styles.submitBtn} onPress={() => setStage('goals')}>
-            <Text style={styles.submitBtnText}>Continue</Text>
+        <View style={styles.centeredView}>
+          <Text style={styles.previewHeadline}>Entry captured.</Text>
+          <Text style={styles.previewDuration}>{mins > 0 ? `${mins}m ${secs}s` : `${secs}s`}</Text>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => setStage('goals')}>
+            <Text style={styles.primaryBtnText}>Continue</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.doneBtn} onPress={() => { setVideoUri(null); setStage('prompt'); }}>
-            <Text style={styles.doneBtnText}>Retake</Text>
+          <TouchableOpacity style={styles.ghostBtn} onPress={() => { setVideoUri(null); setStage('home'); }}>
+            <Text style={styles.ghostBtnText}>Retake</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Goals / intentions stage
+  // Goals
   if (stage === 'goals') {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.goalsContent}>
-          <Text style={styles.goalsTitle}>Daily Intentions</Text>
-          <Text style={styles.goalsSubtitle}>What do you want to accomplish today? (optional)</Text>
+          <Text style={styles.goalsHeadline}>Set your intentions.</Text>
+          <Text style={styles.goalsSubtitle}>What would you like to carry forward today?</Text>
           {intentions.map((val, idx) => (
             <TextInput
               key={idx}
@@ -195,113 +181,232 @@ export default function RecordTab() {
                 next[idx] = t;
                 setIntentions(next);
               }}
-              returnKeyType="next"
             />
           ))}
           {intentions.length < 3 && (
             <TouchableOpacity onPress={() => setIntentions([...intentions, ''])}>
-              <Text style={styles.addIntention}>+ Add another</Text>
+              <Text style={styles.addLink}>+ Add another</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            style={styles.submitBtn}
-            onPress={() => handleSubmit()}
-          >
-            <Text style={styles.submitBtnText}>Submit Entry</Text>
+          <TouchableOpacity style={[styles.primaryBtn, { marginTop: 36 }]} onPress={handleSubmit}>
+            <Text style={styles.primaryBtnText}>Save Entry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ marginTop: 14, alignItems: 'center' }} onPress={handleSubmit}>
+            <Text style={styles.skipLink}>Skip for now</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     );
   }
 
-  return (
-    <View style={styles.cameraContainer}>
-      <CameraView
-        ref={cameraRef}
-        style={StyleSheet.absoluteFill}
-        facing="front"
-        mode="video"
-      />
-
-      {/* Guided prompt overlay */}
-      {recordingMode === 'guided' && stage === 'prompt' && (
-        <SafeAreaView style={styles.promptOverlay} edges={['top']}>
-          <View style={styles.promptBubble}>
-            <Text style={styles.promptLabel}>Today's prompt</Text>
-            <Text style={styles.promptText}>{getTodayPrompt()}</Text>
-          </View>
-        </SafeAreaView>
-      )}
-
-      {/* Record controls */}
-      <SafeAreaView style={styles.controls} edges={['bottom']}>
-        {!isRecording ? (
-          <TouchableOpacity style={styles.recordBtn} onPress={startRecording}>
-            <View style={styles.recordBtnInner} />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.stopBtn} onPress={stopRecording}>
-            <View style={styles.stopBtnInner} />
-          </TouchableOpacity>
+  // Recording — full-screen camera
+  if (stage === 'recording') {
+    return (
+      <View style={styles.cameraContainer}>
+        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" mode="video" />
+        {showPrompt && (
+          <SafeAreaView style={styles.promptOverlay} edges={['top']}>
+            <View style={styles.cameraBubble}>
+              <Text style={styles.cameraPromptLabel}>Prompt</Text>
+              <Text style={styles.cameraPromptText}>{getTodayPrompt()}</Text>
+            </View>
+          </SafeAreaView>
         )}
-        <Text style={styles.recordHint}>
-          {isRecording ? 'Tap to stop' : 'Tap to record'}
-        </Text>
-      </SafeAreaView>
-    </View>
+        <SafeAreaView style={styles.cameraControls} edges={['bottom']}>
+          {!isRecording ? (
+            <ActivityIndicator color="#fff" size="large" />
+          ) : (
+            <>
+              <TouchableOpacity style={styles.stopBtn} onPress={stopRecording}>
+                <View style={styles.stopBtnInner} />
+              </TouchableOpacity>
+              <Text style={styles.recordHint}>Tap to stop</Text>
+            </>
+          )}
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // Home — the main screen
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.homeContent} showsVerticalScrollIndicator={false}>
+
+        {/* Header */}
+        <View style={styles.homeHeader}>
+          <Text style={styles.appName}>Candor</Text>
+        </View>
+
+        {/* Greeting */}
+        <View style={styles.greetingSection}>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.greetingSubtext}>Take a moment to reflect.</Text>
+        </View>
+
+        {/* Mode toggle */}
+        <View style={styles.modeToggle}>
+          <TouchableOpacity
+            style={[styles.modeBtn, !showPrompt && styles.modeBtnActive]}
+            onPress={() => setShowPrompt(false)}
+          >
+            <Text style={[styles.modeBtnText, !showPrompt && styles.modeBtnTextActive]}>Free Speech</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeBtn, showPrompt && styles.modeBtnActive]}
+            onPress={() => setShowPrompt(true)}
+          >
+            <Text style={[styles.modeBtnText, showPrompt && styles.modeBtnTextActive]}>Prompted</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Prompt card — only in prompted mode */}
+        {showPrompt && (
+          <View style={styles.promptCard}>
+            <Text style={styles.promptCardLabel}>Today's prompt</Text>
+            <Text style={styles.promptCardText}>{getTodayPrompt()}</Text>
+          </View>
+        )}
+
+        {/* Record CTA */}
+        <View style={styles.recordSection}>
+          <TouchableOpacity style={styles.recordButton} onPress={handleStartPress} activeOpacity={0.75}>
+            <View style={styles.recordRing}>
+              <View style={styles.recordDot} />
+            </View>
+            <Text style={styles.recordLabel}>Begin today's entry</Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   cameraContainer: { flex: 1, backgroundColor: '#000' },
-  permissionView: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32, gap: 16 },
-  permissionTitle: { fontSize: 24, fontWeight: '600', color: Colors.text.primary, textAlign: 'center' },
-  permissionBody: { fontSize: 15, color: Colors.text.secondary, textAlign: 'center', lineHeight: 22 },
-  permissionBtn: { backgroundColor: Colors.accent.amber, borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14 },
-  permissionBtnText: { color: Colors.background, fontSize: 16, fontWeight: '600' },
-  promptOverlay: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 20 },
-  promptBubble: {
-    backgroundColor: 'rgba(14,14,16,0.85)',
-    borderRadius: 16,
-    padding: 16,
+
+  homeContent: { paddingHorizontal: 28, paddingBottom: 48 },
+  homeHeader: {
+    paddingTop: 20,
+    paddingBottom: 36,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  appName: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: Colors.text.secondary,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+  },
+
+  greetingSection: { paddingTop: 44, paddingBottom: 36 },
+  greeting: {
+    fontSize: 34,
+    fontWeight: '300',
+    color: Colors.text.primary,
+    fontFamily: 'Georgia',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  greetingSubtext: { fontSize: 16, color: Colors.text.secondary, fontWeight: '300', letterSpacing: 0.2 },
+
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginTop: 16,
+    padding: 3,
+    marginBottom: 28,
   },
-  promptLabel: { fontSize: 11, fontWeight: '600', color: Colors.accent.amber, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
-  promptText: { fontSize: 17, color: Colors.text.primary, lineHeight: 24 },
-  controls: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', paddingBottom: 32 },
-  recordBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 4,
-    borderColor: '#fff',
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  modeBtnActive: {
+    backgroundColor: Colors.background,
+    shadowColor: '#2D2926',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  modeBtnText: { fontSize: 13, color: Colors.text.muted, fontWeight: '500', letterSpacing: 0.2 },
+  modeBtnTextActive: { color: Colors.text.primary },
+
+  promptCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 22,
+    marginBottom: 40,
+  },
+  promptCardLabel: { fontSize: 11, color: Colors.accent.terracotta, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '600', marginBottom: 14 },
+  promptCardText: { fontSize: 19, color: Colors.text.primary, lineHeight: 30, fontWeight: '300', fontFamily: 'Georgia' },
+
+  recordSection: { alignItems: 'center', paddingTop: 8 },
+  recordButton: { alignItems: 'center', gap: 20 },
+  recordRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 1.5,
+    borderColor: Colors.accent.terracotta,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.accent.terracottaDim,
   },
-  recordBtnInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
-  stopBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 4,
-    borderColor: Colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
+  recordDot: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.accent.terracotta,
   },
-  stopBtnInner: { width: 30, height: 30, borderRadius: 6, backgroundColor: Colors.danger },
-  recordHint: { color: 'rgba(255,255,255,0.7)', marginTop: 12, fontSize: 13 },
-  doneView: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32, gap: 16 },
-  doneEmoji: { fontSize: 48, color: Colors.accent.sage },
-  doneTitle: { fontSize: 24, fontWeight: '600', color: Colors.text.primary },
-  doneBody: { fontSize: 15, color: Colors.text.secondary, textAlign: 'center', lineHeight: 22 },
-  doneBtn: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14, marginTop: 8 },
-  doneBtnText: { color: Colors.text.primary, fontSize: 16, fontWeight: '500' },
-  goalsContent: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 40 },
-  goalsTitle: { fontSize: 26, fontWeight: '600', color: Colors.text.primary, marginBottom: 8 },
-  goalsSubtitle: { fontSize: 15, color: Colors.text.secondary, lineHeight: 22, marginBottom: 24 },
+  recordLabel: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    letterSpacing: 0.5,
+    fontWeight: '400',
+  },
+
+  // Camera
+  promptOverlay: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 20 },
+  cameraBubble: {
+    backgroundColor: 'rgba(251,248,244,0.9)',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 12,
+  },
+  cameraPromptLabel: { fontSize: 10, color: Colors.accent.terracotta, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 4, fontWeight: '600' },
+  cameraPromptText: { fontSize: 15, color: Colors.text.primary, lineHeight: 22 },
+  cameraControls: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', paddingBottom: 40 },
+  stopBtn: { width: 76, height: 76, borderRadius: 38, borderWidth: 2, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  stopBtnInner: { width: 26, height: 26, borderRadius: 5, backgroundColor: '#fff' },
+  recordHint: { color: 'rgba(255,255,255,0.6)', marginTop: 12, fontSize: 13, letterSpacing: 0.3 },
+
+  // States
+  centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 36, gap: 20 },
+  doneHeadline: { fontSize: 28, fontWeight: '300', color: Colors.text.primary, textAlign: 'center', fontFamily: 'Georgia', lineHeight: 38 },
+  ripple: { width: 72, height: 72, borderRadius: 36, borderWidth: 1, borderColor: Colors.accent.terracotta, alignItems: 'center', justifyContent: 'center' },
+  rippleInner: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: Colors.accent.terracotta, opacity: 0.5 },
+  doneBody: { fontSize: 15, color: Colors.text.secondary, textAlign: 'center', lineHeight: 24, fontWeight: '300' },
+  previewHeadline: { fontSize: 28, fontWeight: '300', color: Colors.text.primary, fontFamily: 'Georgia' },
+  previewDuration: { fontSize: 15, color: Colors.text.muted, letterSpacing: 1 },
+  stateBody: { fontSize: 15, color: Colors.text.secondary, textAlign: 'center' },
+
+  primaryBtn: { width: '100%', backgroundColor: Colors.accent.terracotta, borderRadius: 14, paddingVertical: 17, alignItems: 'center' },
+  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '500', letterSpacing: 0.3 },
+  ghostBtn: { width: '100%', borderWidth: 1, borderColor: Colors.border, borderRadius: 14, paddingVertical: 17, alignItems: 'center' },
+  ghostBtnText: { color: Colors.text.secondary, fontSize: 15 },
+
+  goalsContent: { paddingHorizontal: 28, paddingTop: 60, paddingBottom: 40 },
+  goalsHeadline: { fontSize: 30, fontWeight: '300', color: Colors.text.primary, fontFamily: 'Georgia', marginBottom: 10 },
+  goalsSubtitle: { fontSize: 15, color: Colors.text.secondary, lineHeight: 24, marginBottom: 32, fontWeight: '300' },
   intentionInput: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
@@ -313,7 +418,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
   },
-  addIntention: { color: Colors.accent.amber, fontSize: 15, marginBottom: 32 },
-  submitBtn: { backgroundColor: Colors.accent.amber, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  submitBtnText: { color: Colors.background, fontSize: 16, fontWeight: '600' },
+  addLink: { color: Colors.accent.terracotta, fontSize: 14, marginTop: 4 },
+  skipLink: { color: Colors.text.muted, fontSize: 14 },
 });

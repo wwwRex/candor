@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, Text, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlatList, StyleSheet, Text, ActivityIndicator, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { EntryCard } from '../../components/Journal/EntryCard';
@@ -18,10 +18,7 @@ export default function JournalTab() {
       `${process.env.EXPO_PUBLIC_API_URL}/api/journal`,
       { headers: { Authorization: `Bearer ${session.access_token}` } }
     );
-    if (res.ok) {
-      const data = await res.json() as JournalEntry[];
-      setEntries(data);
-    }
+    if (res.ok) setEntries(await res.json() as JournalEntry[]);
     setLoading(false);
     setRefreshing(false);
   }
@@ -30,9 +27,8 @@ export default function JournalTab() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.heading}>Journal</Text>
       {loading ? (
-        <ActivityIndicator color={Colors.accent.amber} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={Colors.accent.terracotta} style={{ marginTop: 60 }} />
       ) : (
         <FlatList
           data={entries}
@@ -43,11 +39,20 @@ export default function JournalTab() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); void fetchEntries(); }}
-              tintColor={Colors.accent.amber}
+              tintColor={Colors.accent.terracotta}
             />
           }
+          ListHeaderComponent={
+            <View style={styles.header}>
+              <Text style={styles.heading}>Journal</Text>
+              <Text style={styles.subheading}>{entries.length} {entries.length === 1 ? 'entry' : 'entries'}</Text>
+            </View>
+          }
           ListEmptyComponent={
-            <Text style={styles.empty}>No entries yet. Record your first video!</Text>
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyHeadline}>Nothing here yet.</Text>
+              <Text style={styles.emptyBody}>Record your first entry and it will appear here.</Text>
+            </View>
           }
         />
       )}
@@ -57,7 +62,24 @@ export default function JournalTab() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  heading: { fontSize: 28, fontWeight: '600', color: Colors.text.primary, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
-  list: { paddingHorizontal: 16, paddingBottom: 24 },
-  empty: { color: Colors.text.secondary, textAlign: 'center', marginTop: 60, fontSize: 15 },
+  list: { paddingHorizontal: 20, paddingBottom: 32 },
+  header: {
+    paddingTop: 20,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+    marginBottom: 20,
+  },
+  heading: {
+    fontSize: 32,
+    fontWeight: '300',
+    color: Colors.text.primary,
+    fontFamily: 'Georgia',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  subheading: { fontSize: 13, color: Colors.text.muted, letterSpacing: 0.3 },
+  emptyContainer: { paddingTop: 60, alignItems: 'center', gap: 10 },
+  emptyHeadline: { fontSize: 20, fontWeight: '300', color: Colors.text.primary, fontFamily: 'Georgia' },
+  emptyBody: { fontSize: 14, color: Colors.text.muted, textAlign: 'center', lineHeight: 22 },
 });

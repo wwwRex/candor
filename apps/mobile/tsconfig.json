@@ -3,8 +3,16 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@repo/shared": ["../../packages/shared/src/index.ts"],
-      "@repo/shared/*": ["../../packages/shared/src/*"]
+      "@repo/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@repo/shared/*": [
+        "../../packages/shared/src/*"
+      ]
     }
-  }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
 }
