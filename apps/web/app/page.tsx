@@ -105,66 +105,71 @@ export default function Home() {
   return (
     <div className="relative w-full overflow-hidden bg-white">
 
-      {/* ── Video background (hero only) ── */}
-      <div className="absolute inset-auto left-0 right-0 bottom-auto overflow-hidden" style={{ top: '300px', height: '70vh' }}>
-        <video
-          ref={videoRef}
-          src={VIDEO_URL}
-          muted
-          playsInline
-          preload="auto"
-          className="w-full h-full object-cover animate-slow-zoom"
-          style={{ opacity: 0 }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white pointer-events-none" />
-      </div>
+      {/* ── Nav + Hero (video at natural 16:9 ratio) ── */}
+      <section className="relative z-10 w-full">
 
-      {/* ── Navigation ── */}
-      <nav className="relative z-10 w-full">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
-          <span className="text-3xl tracking-tight font-serif select-none" style={{ color: '#000000' }}>
-            Candor
-          </span>
-          <ul className="hidden md:flex items-center gap-8">
-            {NAV_LINKS.map((item) => (
-              <li key={item}>
-                <a
-                  href={item === 'About' ? '#about' : item === 'Reach Us' ? '#contact' : item === 'Journal' ? '#journal' : '#'}
-                  className="text-sm transition-colors hover:text-black"
-                  style={{ color: item === 'Home' ? '#000000' : '#6F6F6F' }}
-                >
-                  {item}
-                </a>
-              </li>
-            ))}
-          </ul>
-          <a href="#waitlist">
-            <button className="rounded-full px-6 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.03] active:scale-[0.98]" style={{ backgroundColor: '#000000' }}>
-              Join Waitlist
-            </button>
-          </a>
+        {/* Navigation overlaid on top of video */}
+        <nav className="relative z-20 w-full">
+          <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+            <span className="text-3xl tracking-tight font-serif select-none" style={{ color: '#000000' }}>
+              Candor
+            </span>
+            <ul className="hidden md:flex items-center gap-8">
+              {NAV_LINKS.map((item) => (
+                <li key={item}>
+                  <a
+                    href={item === 'About' ? '#about' : item === 'Reach Us' ? '#contact' : item === 'Journal' ? '#journal' : '#'}
+                    className="text-sm transition-colors hover:text-black"
+                    style={{ color: item === 'Home' ? '#000000' : '#6F6F6F' }}
+                  >
+                    {item}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <a href="#waitlist">
+              <button className="rounded-full px-6 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.03] active:scale-[0.98]" style={{ backgroundColor: '#000000' }}>
+                Join Waitlist
+              </button>
+            </a>
+          </div>
+        </nav>
+
+        {/* Video at natural 16:9 — no cropping */}
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16/9' }}>
+          <video
+            ref={videoRef}
+            src={VIDEO_URL}
+            muted
+            playsInline
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover animate-slow-zoom"
+            style={{ opacity: 0 }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white pointer-events-none" />
+
+          {/* Hero text in upper light area of video */}
+          <div className="absolute inset-0 flex flex-col items-center justify-start text-center px-6 pt-28">
+            <h1
+              className="animate-fade-rise font-serif font-normal max-w-5xl text-5xl sm:text-7xl md:text-8xl"
+              style={{ lineHeight: 0.95, letterSpacing: '-2.46px', color: '#000000' }}
+            >
+              Daily{' '}
+              <em className="not-italic" style={{ color: '#6F6F6F' }}>awareness.</em>{' '}
+              Lasting{' '}
+              <em className="not-italic" style={{ color: '#6F6F6F' }}>growth.</em>
+            </h1>
+            <p className="animate-fade-rise-delay mt-8 max-w-xl text-base sm:text-lg leading-relaxed" style={{ color: '#6F6F6F' }}>
+              A video journal that coaches you back. Speak your truth daily — Candor turns it into the guidance you need to grow.
+            </p>
+            <a href="#waitlist">
+              <button className="animate-fade-rise-delay-2 mt-12 rounded-full px-14 py-5 text-base font-medium text-white transition-transform hover:scale-[1.03] active:scale-[0.98]" style={{ backgroundColor: '#000000' }}>
+                Begin Journey
+              </button>
+            </a>
+          </div>
         </div>
-      </nav>
 
-      {/* ── Hero ── */}
-      <section className="relative z-10 flex flex-col items-center justify-center text-center px-6 pb-48" style={{ paddingTop: 'calc(8rem - 75px)' }}>
-        <h1
-          className="animate-fade-rise font-serif font-normal max-w-5xl text-5xl sm:text-7xl md:text-8xl"
-          style={{ lineHeight: 0.95, letterSpacing: '-2.46px', color: '#000000' }}
-        >
-          Daily{' '}
-          <em className="not-italic" style={{ color: '#6F6F6F' }}>awareness.</em>{' '}
-          Lasting{' '}
-          <em className="not-italic" style={{ color: '#6F6F6F' }}>growth.</em>
-        </h1>
-        <p className="animate-fade-rise-delay mt-8 max-w-xl text-base sm:text-lg leading-relaxed" style={{ color: '#6F6F6F' }}>
-          A video journal that coaches you back. Speak your truth daily — Candor turns it into the guidance you need to grow.
-        </p>
-        <a href="#waitlist">
-          <button className="animate-fade-rise-delay-2 mt-12 rounded-full px-14 py-5 text-base font-medium text-white transition-transform hover:scale-[1.03] active:scale-[0.98]" style={{ backgroundColor: '#000000' }}>
-            Begin Journey
-          </button>
-        </a>
       </section>
 
       {/* ── How it works ── */}
@@ -177,7 +182,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {STEPS.map((step) => (
               <div key={step.number} className="flex flex-col gap-4">
-                <span className="font-serif text-5xl" style={{ color: '#E8E8E8' }}>{step.number}</span>
+                <span className="font-serif text-5xl" style={{ color: '#A0A0A0' }}>{step.number}</span>
                 <h3 className="font-serif text-2xl" style={{ color: '#000000' }}>{step.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: '#6F6F6F' }}>{step.body}</p>
               </div>
