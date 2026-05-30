@@ -69,7 +69,7 @@ export default function JournalEntryDetail() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator color={Colors.accent.amber} style={{ marginTop: 60 }} />
+        <ActivityIndicator color={Colors.accent.terracotta} style={{ marginTop: 60 }} />
       </SafeAreaView>
     );
   }
@@ -157,18 +157,18 @@ export default function JournalEntryDetail() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   navBar: { paddingHorizontal: 20, paddingVertical: 12 },
-  backBtn: { color: Colors.accent.amber, fontSize: 16 },
+  backBtn: { color: Colors.accent.terracotta, fontSize: 16 },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
   date: { fontSize: 22, fontWeight: '600', color: Colors.text.primary, marginBottom: 12 },
   sentimentBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: `${Colors.accent.amber}22`,
+    backgroundColor: `${Colors.accent.terracotta}22`,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginBottom: 20,
   },
-  sentimentText: { fontSize: 13, color: Colors.accent.amber },
+  sentimentText: { fontSize: 13, color: Colors.accent.terracotta },
   section: { marginBottom: 28 },
   sectionTitle: { fontSize: 13, fontWeight: '600', color: Colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 },
   transcript: { fontSize: 16, color: Colors.text.primary, lineHeight: 26 },

@@ -9,7 +9,7 @@
     "scheme": "candor",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.candor.app",
+      "bundleIdentifier": "com.robbieslinkard.candor",
       "infoPlist": {
         "NSCameraUsageDescription": "Candor needs camera access to record your daily video journal entries.",
         "NSMicrophoneUsageDescription": "Candor needs microphone access to record audio in your video journal entries."

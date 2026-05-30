@@ -109,7 +109,7 @@ export default function SettingsTab() {
             <Switch
               value={user.reminder_enabled}
               onValueChange={handleReminderToggle}
-              trackColor={{ false: Colors.border, true: Colors.accent.amber }}
+              trackColor={{ false: Colors.border, true: Colors.accent.terracotta }}
               thumbColor={Colors.text.primary}
             />
           </View>
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   optionRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
   optionLabel: { fontSize: 16, color: Colors.text.primary, flex: 1 },
   optionDesc: { fontSize: 13, color: Colors.text.secondary, marginTop: 2 },
-  selectedDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.accent.amber },
+  selectedDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.accent.terracotta },
   switchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
   signOutBtn: { marginTop: 32, paddingVertical: 16, alignItems: 'center', borderRadius: 14, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   signOutText: { color: Colors.danger, fontSize: 16, fontWeight: '500' },

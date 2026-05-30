@@ -12,13 +12,12 @@ export default function JournalTab() {
   const [refreshing, setRefreshing] = useState(false);
 
   async function fetchEntries() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const res = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL}/api/journal`,
-      { headers: { Authorization: `Bearer ${session.access_token}` } }
-    );
-    if (res.ok) setEntries(await res.json() as JournalEntry[]);
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .select('*, daily_intentions(*)')
+      .order('recorded_at', { ascending: false })
+      .limit(20);
+    if (!error && data) setEntries(data as unknown as JournalEntry[]);
     setLoading(false);
     setRefreshing(false);
   }

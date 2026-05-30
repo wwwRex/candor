@@ -13,13 +13,12 @@ export default function InsightsTab() {
   const [generating, setGenerating] = useState(false);
 
   async function fetchInsights() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const res = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL}/api/insights`,
-      { headers: { Authorization: `Bearer ${session.access_token}` } }
-    );
-    if (res.ok) setSessions(await res.json() as InsightSession[]);
+    const { data, error } = await supabase
+      .from('insight_sessions')
+      .select('*')
+      .order('generated_at', { ascending: false })
+      .limit(10);
+    if (!error && data) setSessions(data as unknown as InsightSession[]);
     setLoading(false);
     setRefreshing(false);
   }

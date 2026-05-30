@@ -8,7 +8,6 @@
     "@repo/shared": "*",
     "@supabase/supabase-js": "^2.45.0",
     "expo": "~56.0.6",
-    "expo-av": "~15.1.7",
     "expo-camera": "~56.0.7",
     "expo-constants": "~56.0.16",
     "expo-device": "~56.0.4",
@@ -36,8 +35,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "ios": "expo start --ios",
-    "android": "expo start --android",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
     "check-types": "tsc --noEmit"
   },
   "private": true

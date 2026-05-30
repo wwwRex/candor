@@ -86,7 +86,13 @@ export default function RecordTab() {
     if (!videoUri) return;
     setStage('uploading');
     try {
-      const result = await uploadVideoAndTranscribe(videoUri, videoDuration, setUploadProgress);
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Upload timed out. Check your connection and try again.')), 45000)
+      );
+      const result = await Promise.race([
+        uploadVideoAndTranscribe(videoUri, videoDuration, setUploadProgress),
+        timeout,
+      ]);
       const validIntentions = intentions.filter((i) => i.trim());
       const { data: { session } } = await supabase.auth.getSession();
       if (session && validIntentions.length > 0) {

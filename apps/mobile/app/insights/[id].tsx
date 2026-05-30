@@ -80,7 +80,7 @@ export default function InsightDetail() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator color={Colors.accent.amber} style={{ marginTop: 60 }} />
+        <ActivityIndicator color={Colors.accent.terracotta} style={{ marginTop: 60 }} />
       </SafeAreaView>
     );
   }
@@ -142,26 +142,26 @@ export default function InsightDetail() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   navBar: { paddingHorizontal: 20, paddingVertical: 12 },
-  backBtn: { color: Colors.accent.amber, fontSize: 16 },
+  backBtn: { color: Colors.accent.terracotta, fontSize: 16 },
   content: { paddingHorizontal: 20, paddingBottom: 60 },
   period: { fontSize: 22, fontWeight: '600', color: Colors.text.primary, marginBottom: 4 },
   meta: { fontSize: 13, color: Colors.text.muted, marginBottom: 20 },
   audioBtn: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: Colors.accent.amber,
+    borderColor: Colors.accent.terracotta,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 28,
   },
-  audioBtnText: { color: Colors.accent.amber, fontSize: 15, fontWeight: '600' },
+  audioBtnText: { color: Colors.accent.terracotta, fontSize: 15, fontWeight: '600' },
   adviceText: { fontSize: 16, color: Colors.text.primary, lineHeight: 28 },
   error: { color: Colors.text.secondary, textAlign: 'center', marginTop: 60, fontSize: 16 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 32, paddingTop: 20, borderTopWidth: 1, borderTopColor: Colors.border },
   ratingLabel: { fontSize: 14, color: Colors.text.secondary },
   ratingBtns: { flexDirection: 'row', gap: 12 },
   ratingBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  ratingBtnActive: { borderColor: Colors.accent.amber, backgroundColor: `${Colors.accent.amber}22` },
+  ratingBtnActive: { borderColor: Colors.accent.terracotta, backgroundColor: `${Colors.accent.terracotta}22` },
   ratingBtnText: { fontSize: 22 },
 });

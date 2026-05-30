@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   button: {
-    backgroundColor: Colors.accent.amber,
+    backgroundColor: Colors.accent.terracotta,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
