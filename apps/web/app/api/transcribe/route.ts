@@ -5,7 +5,7 @@ import { openai } from '../../../lib/openai';
 import { anthropic } from '../../../lib/anthropic';
 
 export async function POST(request: Request) {
-  const user = await getAuthUser();
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { entry_id, video_url }: { entry_id: string; video_url: string } = await request.json();

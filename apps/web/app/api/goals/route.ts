@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServerClient, getAuthUser } from '../../../lib/supabase/server';
 import type { CreateGoalDto } from '@repo/shared';
 
-export async function GET() {
-  const user = await getAuthUser();
+export async function GET(request: Request) {
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = await createSupabaseServerClient();
@@ -18,7 +18,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const user = await getAuthUser();
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body: CreateGoalDto = await request.json();

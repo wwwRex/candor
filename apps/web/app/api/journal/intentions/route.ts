@@ -3,7 +3,7 @@ import { createSupabaseServerClient, getAuthUser } from '../../../../lib/supabas
 import type { CreateDailyIntentionDto } from '@repo/shared';
 
 export async function POST(request: Request) {
-  const user = await getAuthUser();
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body: CreateDailyIntentionDto = await request.json();
