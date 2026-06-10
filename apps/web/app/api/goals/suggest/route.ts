@@ -3,8 +3,8 @@ import { createSupabaseServerClient, getAuthUser } from '../../../../lib/supabas
 import { anthropic } from '../../../../lib/anthropic';
 import type { SuggestedGoal } from '@repo/shared';
 
-export async function POST() {
-  const user = await getAuthUser();
+export async function POST(request: Request) {
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = await createSupabaseServerClient();

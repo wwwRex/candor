@@ -1,6 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -26,22 +26,25 @@ export async function createSupabaseServerClient() {
   );
 }
 
-export async function getAuthUser() {
-  // Mobile sends Bearer token in Authorization header
-  const headersList = await headers();
-  const authorization = headersList.get('authorization');
+function createAnonClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
+// Reads Bearer token from request object (mobile) or falls back to cookies (web)
+export async function getAuthUser(request?: Request) {
+  // Mobile: Bearer token in Authorization header
+  const authorization = request?.headers.get('authorization');
   if (authorization?.startsWith('Bearer ')) {
     const token = authorization.slice(7);
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data: { user }, error } = await createAnonClient().auth.getUser(token);
     if (error || !user) return null;
     return user;
   }
 
-  // Web falls back to cookie-based auth
+  // Web: cookie-based auth
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return null;

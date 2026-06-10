@@ -3,7 +3,7 @@ import { getAuthUser } from '../../../../../lib/supabase/server';
 import { createSupabaseServerClient } from '../../../../../lib/supabase/server';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getAuthUser();
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;

@@ -3,7 +3,7 @@ import { createSupabaseServerClient, getAuthUser } from '../../../lib/supabase/s
 import type { CreateJournalEntryDto } from '@repo/shared';
 
 export async function GET(request: Request) {
-  const user = await getAuthUser();
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const user = await getAuthUser();
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body: CreateJournalEntryDto = await request.json();
@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       id: body.id,
       user_id: user.id,
       video_url: body.video_url,
+      thumbnail_url: (body as unknown as { thumbnail_url?: string }).thumbnail_url ?? null,
       duration_seconds: body.duration_seconds,
       recorded_at: body.recorded_at ?? new Date().toISOString(),
     })

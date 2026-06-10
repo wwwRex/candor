@@ -186,7 +186,7 @@ export async function POST(request: Request) {
   if (body.user_id && request.headers.get('x-cron-secret') === process.env.CRON_SECRET) {
     userId = body.user_id;
   } else {
-    const user = await getAuthUser();
+    const user = await getAuthUser(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     userId = user.id;
   }

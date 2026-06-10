@@ -3,7 +3,7 @@ import { createSupabaseServerClient, getAuthUser } from '../../../../lib/supabas
 import type { UpdateGoalDto } from '@repo/shared';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getAuthUser();
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
@@ -22,8 +22,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   return NextResponse.json(data);
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getAuthUser();
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getAuthUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
