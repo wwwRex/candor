@@ -17,15 +17,14 @@ export default function JournalEntryDetail() {
 
   useEffect(() => {
     async function load() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/journal/${id}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (res.ok) {
-        const data = await res.json() as JournalEntry;
-        setEntry(data);
-        setNotes(data.notes ?? '');
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .select('*, daily_intentions(*)')
+        .eq('id', id)
+        .single();
+      if (!error && data) {
+        setEntry(data as unknown as JournalEntry);
+        setNotes((data as unknown as { notes?: string }).notes ?? '');
       }
       setLoading(false);
     }
@@ -39,25 +38,14 @@ export default function JournalEntryDetail() {
   }
 
   async function saveNotes(text: string) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
     setSavingNotes(true);
-    await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/journal/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ notes: text }),
-    });
+    await supabase.from('journal_entries').update({ notes: text }).eq('id', id);
     setSavingNotes(false);
   }
 
   async function toggleIntention(intentionId: string, completed: boolean) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session || !entry) return;
-    await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/journal/intentions/${intentionId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ completed: !completed }),
-    });
+    if (!entry) return;
+    await supabase.from('daily_intentions').update({ completed: !completed }).eq('id', intentionId);
     setEntry({
       ...entry,
       daily_intentions: entry.daily_intentions?.map((i) =>

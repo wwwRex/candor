@@ -50,14 +50,20 @@ export default function RecordTab() {
   const [videoDuration, setVideoDuration] = useState(0);
   const recordingStartRef = useRef<number>(0);
   const cameraRef = useRef<CameraView>(null);
+  const [starting, setStarting] = useState(false);
 
   async function handleStartPress() {
+    if (starting) return;
+    setStarting(true);
     if (!permission?.granted) {
       const res = await requestPermission();
-      if (!res.granted) return;
+      if (!res.granted) { setStarting(false); return; }
     }
     setStage('recording');
-    setTimeout(() => startRecording(), 300);
+  }
+
+  function onCameraReady() {
+    setTimeout(() => { void startRecording(); }, 500);
   }
 
   async function startRecording() {
@@ -73,6 +79,7 @@ export default function RecordTab() {
       }
     } catch {
       setIsRecording(false);
+      setStarting(false);
       setStage('home');
     }
   }
@@ -115,6 +122,7 @@ export default function RecordTab() {
 
   function resetToHome() {
     setStage('home');
+    setStarting(false);
     setIntentions(['']);
     setVideoUri(null);
     setVideoDuration(0);
@@ -125,9 +133,9 @@ export default function RecordTab() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centeredView}>
-          <Text style={styles.doneHeadline}>Your thoughts{'\n'}have been saved.</Text>
+          <Text style={styles.doneHeadline}>Entry received.</Text>
           <View style={styles.ripple}><View style={styles.rippleInner} /></View>
-          <Text style={styles.doneBody}>Check your journal soon — it will be transcribed shortly.</Text>
+          <Text style={styles.doneBody}>The AI is processing your video.{'\n'}Your reflection will deepen over time.</Text>
           <TouchableOpacity style={styles.ghostBtn} onPress={resetToHome}>
             <Text style={styles.ghostBtnText}>Record another</Text>
           </TouchableOpacity>
@@ -209,7 +217,7 @@ export default function RecordTab() {
   if (stage === 'recording') {
     return (
       <View style={styles.cameraContainer}>
-        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" mode="video" />
+        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" mode="video" onCameraReady={onCameraReady} />
         {showPrompt && (
           <SafeAreaView style={styles.promptOverlay} edges={['top']}>
             <View style={styles.cameraBubble}>

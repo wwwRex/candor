@@ -1,18 +1,22 @@
-import * as FileSystem from 'expo-file-system';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { supabase } from './supabase';
-import { v4 as uuidv4 } from 'uuid';
 
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 const API_BASE = process.env.EXPO_PUBLIC_API_URL!;
 
-async function getAuthHeader(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+function generateId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
 }
+
 
 export interface UploadResult {
   entry_id: string;
   video_url: string;
+  thumbnail_url: string | null;
   transcript: string | null;
   sentiment_summary: string | null;
 }
@@ -22,65 +26,97 @@ export async function uploadVideoAndTranscribe(
   durationSeconds: number,
   onProgress?: (progress: number) => void
 ): Promise<UploadResult> {
-  const entry_id = uuidv4();
-  const authHeaders = await getAuthHeader();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not signed in. Please sign in and try again.');
 
-  // 1. Get signed upload URL
-  const urlRes = await fetch(`${API_BASE}/api/upload/signed-url`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
-    body: JSON.stringify({ entry_id, content_type: 'video/mp4' }),
-  });
-  if (!urlRes.ok) throw new Error('Failed to get upload URL');
-  const { signed_url, path } = (await urlRes.json()) as { signed_url: string; path: string };
+  const entry_id = generateId();
+  const videoPath = `${session.user.id}/${entry_id}.mp4`;
+  const thumbPath = `${session.user.id}/${entry_id}.jpg`;
 
-  // 2. Upload video directly to Supabase Storage
-  const uploadResult = await FileSystem.uploadAsync(signed_url, localUri, {
-    httpMethod: 'PUT',
-    headers: { 'Content-Type': 'video/mp4' },
-    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-  });
+  onProgress?.(0.05);
 
-  if (uploadResult.status !== 200 && uploadResult.status !== 204) {
-    throw new Error(`Upload failed with status ${uploadResult.status}`);
+  // 1. Generate thumbnail from local video
+  let thumbnailUrl: string | null = null;
+  try {
+    const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(localUri, { time: 1000 });
+
+    const thumbXhr = new XMLHttpRequest();
+    const thumbUrl = `${SUPABASE_URL}/storage/v1/object/thumbnails/${thumbPath}`;
+    await new Promise<void>((resolve, reject) => {
+      thumbXhr.open('POST', thumbUrl);
+      thumbXhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+      thumbXhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+      thumbXhr.setRequestHeader('x-upsert', 'true');
+      thumbXhr.onreadystatechange = () => {
+        if (thumbXhr.readyState !== 4) return;
+        if (thumbXhr.status >= 200 && thumbXhr.status < 300) resolve();
+        else resolve(); // non-fatal even if it fails
+      };
+      thumbXhr.onerror = () => resolve(); // non-fatal
+      const fd = new FormData();
+      fd.append('', { uri: thumbUri, type: 'image/jpeg', name: 'thumb.jpg' } as unknown as Blob);
+      thumbXhr.send(fd);
+    });
+    thumbnailUrl = thumbPath;
+  } catch {
+    // non-fatal — no thumbnail
   }
 
-  onProgress?.(0.5);
+  onProgress?.(0.2);
 
-  // 3. Create journal entry record
-  const entryRes = await fetch(`${API_BASE}/api/journal`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
-    body: JSON.stringify({
+  // 2. Upload video to Supabase Storage via XHR
+  const videoUploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${videoPath}`;
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', videoUploadUrl);
+    xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+    xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+    xhr.setRequestHeader('x-upsert', 'true');
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Video upload failed: ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error('Network error uploading video'));
+    const fd = new FormData();
+    fd.append('', { uri: localUri, type: 'video/mp4', name: 'video.mp4' } as unknown as Blob);
+    xhr.send(fd);
+  });
+
+  onProgress?.(0.65);
+
+  // 3. Insert journal entry
+  const { error: insertError } = await supabase
+    .from('journal_entries')
+    .insert({
       id: entry_id,
-      video_url: path,
+      user_id: session.user.id,
+      video_url: videoPath,
+      thumbnail_url: thumbnailUrl,
       duration_seconds: durationSeconds,
       recorded_at: new Date().toISOString(),
-    }),
-  });
-  if (!entryRes.ok) throw new Error('Failed to create journal entry');
+    });
+  if (insertError) throw new Error(`Failed to save entry: ${insertError.message}`);
 
-  onProgress?.(0.7);
+  onProgress?.(0.85);
 
-  // 4. Trigger transcription
-  const transcribeRes = await fetch(`${API_BASE}/api/transcribe`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
-    body: JSON.stringify({ entry_id, video_url: path }),
-  });
+  // 4. Trigger transcription via Netlify (non-fatal)
+  let transcript: string | null = null;
+  let sentiment_summary: string | null = null;
+  try {
+    const transcribeRes = await fetch(`${API_BASE}/api/transcribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ entry_id, video_url: videoPath }),
+    });
+    if (transcribeRes.ok) {
+      const result = await transcribeRes.json() as { transcript: string; sentiment_summary: string };
+      transcript = result.transcript;
+      sentiment_summary = result.sentiment_summary;
+    }
+  } catch { /* non-fatal */ }
 
   onProgress?.(1.0);
 
-  let transcript: string | null = null;
-  let sentiment_summary: string | null = null;
-  if (transcribeRes.ok) {
-    const result = (await transcribeRes.json()) as { transcript: string; sentiment_summary: string };
-    transcript = result.transcript;
-    sentiment_summary = result.sentiment_summary;
-  }
-
-  // 5. Clean up temp file
-  await FileSystem.deleteAsync(localUri, { idempotent: true });
-
-  return { entry_id, video_url: path, transcript, sentiment_summary };
+  return { entry_id, video_url: videoPath, thumbnail_url: thumbnailUrl, transcript, sentiment_summary };
 }

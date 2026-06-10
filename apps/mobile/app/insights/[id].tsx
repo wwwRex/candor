@@ -20,15 +20,14 @@ export default function InsightDetail() {
 
   useEffect(() => {
     async function load() {
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (!authSession) return;
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/insights/${id}`, {
-        headers: { Authorization: `Bearer ${authSession.access_token}` },
-      });
-      if (res.ok) {
-        const data = await res.json() as InsightSession & { rating?: 1 | -1 };
-        setSession(data);
-        setRating(data.rating ?? null);
+      const { data, error } = await supabase
+        .from('insight_sessions')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (!error && data) {
+        setSession(data as unknown as InsightSession);
+        setRating((data as unknown as { rating?: 1 | -1 }).rating ?? null);
       }
       setLoading(false);
     }
@@ -37,15 +36,9 @@ export default function InsightDetail() {
   }, [id]);
 
   async function handleRate(value: 1 | -1) {
-    const { data: { session: authSession } } = await supabase.auth.getSession();
-    if (!authSession) return;
     const newRating = rating === value ? null : value;
     setRating(newRating);
-    await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/insights/${id}/rate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authSession.access_token}` },
-      body: JSON.stringify({ rating: newRating ?? 0 }),
-    });
+    await supabase.from('insight_sessions').update({ rating: newRating }).eq('id', id);
   }
 
   async function toggleAudio() {
